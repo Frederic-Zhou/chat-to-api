@@ -6,15 +6,16 @@ import config  # 从系统配置中导入数据库连接
 import os
 from db import get_training_data, mark_as_trained  # 导入数据库保存函数
 from spacy.lookups import Lookups
+import sys
 
 
 # 动态添加 textcat 和 ner 标签
-def add_dynamic_labels(textcat, ner, categories, labels):
+def add_dynamic_labels(textcat_multilabel, ner, categories, labels):
     # 动态添加 textcat 标签
-    if textcat is not None:
+    if textcat_multilabel is not None:
         for category in categories.keys():  # categories 是 dict，取 keys 作为标签
-            if category not in textcat.labels:
-                textcat.add_label(category)
+            if category not in textcat_multilabel.labels:
+                textcat_multilabel.add_label(category)
                 print(f"Added TextCategorizer label: {category}")
             else:
                 print(f"TextCategorizer label already exists: {category}")
@@ -45,7 +46,7 @@ def find_entity_positions(text, labels):
 
 
 # 执行增量训练
-def incremental_training():
+def incremental_training(initialize=False):
     # 获取需要训练的数据
     training_data = get_training_data()
 
@@ -81,14 +82,14 @@ def incremental_training():
                 ner = nlp.get_pipe("ner")
 
             if "textcat_multilabel" not in nlp.pipe_names:
-                textcat = nlp.add_pipe("textcat_multilabel", last=True)
+                textcat_multilabel = nlp.add_pipe("textcat_multilabel", last=True)
             else:
-                textcat = nlp.get_pipe("textcat_multilabel")
+                textcat_multilabel = nlp.get_pipe("textcat_multilabel")
 
             # 创建训练示例
             examples = []
             for text, categories, labels in texts:
-                add_dynamic_labels(textcat, ner, categories, labels)
+                add_dynamic_labels(textcat_multilabel, ner, categories, labels)
                 doc = nlp.make_doc(text)
 
                 # 查找实体在文本中的位置
@@ -103,8 +104,11 @@ def incremental_training():
                 examples.append(example)
 
             # 进行增量训练
-            optimizer = nlp.initialize()
-            for i in range(100):  # 迭代20次
+            if initialize:
+                optimizer = nlp.resume_training()
+            else:
+                optimizer = nlp.initialize()
+            for i in range(20):  # 迭代20次
                 losses = {}
                 nlp.update(examples, sgd=optimizer, drop=0.1, losses=losses)
                 print(f"Iteration {i}, Losses: {losses}")
@@ -113,11 +117,16 @@ def incremental_training():
             model_path = save_updated_model(nlp, lang)  # 保存并获取路径
             print(f"模型 {lang} 已完成增量训练并保存。")
             # 标记数据为已训练
-            mark_as_trained()
+            # mark_as_trained()
         except Exception as e:
             print(f"对 {lang} 的模型进行增量训练时出错: {e}")
 
 
 # 执行增量训练
 if __name__ == "__main__":
-    incremental_training()
+    if len(sys.argv) > 1 and sys.argv[1] == "init":
+        print("初始化增量训练...")
+        incremental_training(True)
+    else:
+        print("开始增量训练...")
+        incremental_training(False)

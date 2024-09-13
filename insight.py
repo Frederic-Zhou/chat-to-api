@@ -91,9 +91,6 @@ def messageHandler(ch, method, properties, body):
                 save_insight(timestamp, text, lang, categories, labels, response, False)
 
 
-# 加载模型
-preload_models()
-
 # 连接到 RabbitMQ
 connection = pika.BlockingConnection(pika.URLParameters(config.RABBITMQ_URL))
 channel = connection.channel()
@@ -102,6 +99,7 @@ channel.basic_consume(
     queue=config.RABBITMQ_QUEUE, on_message_callback=messageHandler, auto_ack=True
 )
 
+preload_models()  # 预加载所有模型
 
 try:
     print("Waiting for messages. To exit press CTRL+C")

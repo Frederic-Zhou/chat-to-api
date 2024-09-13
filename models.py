@@ -2,9 +2,11 @@ import config
 import os
 import spacy
 from spacy.cli import download
+import time
 
 # 初始化模型字典（全局变量）
-models = {}
+models = {}  # 用于保存更新后的模型
+
 
 # 确保模型目录存在
 if not os.path.exists(config.MODEL_DIR):
@@ -32,12 +34,4 @@ def save_updated_model(nlp, lang):
     model_path = os.path.join(config.MODEL_DIR, model_name)  # 同样的保存路径
     nlp.to_disk(model_path)  # 保存模型
     print(f"模型 {lang} 已保存到: {model_path}")
-
-    # 只重新加载当前语言模型
-    models[lang] = spacy.load(model_path)  # 只更新该语言的模型
-    print(f"模型 {lang} 已重新加载。")
     return model_path  # 返回路径用于重新加载
-
-
-# 加载所有语言模型
-# preload_models()  # 在启动时加载模型
