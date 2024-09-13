@@ -3,18 +3,9 @@ import yaml
 import requests
 from langdetect import detect
 import time
-from db_utils import save_insight  # 导入数据库保存函数
+from db import save_insight  # 导入数据库保存函数
 import config
 from models import models
-
-
-# Load API configuration from YAML file
-def load_handlers_config(file_path="cats_handlers.yaml"):
-    with open(file_path, "r") as f:
-        return yaml.safe_load(f)
-
-
-api_config = load_handlers_config()
 
 
 # 执行 HTTP 请求
@@ -58,8 +49,8 @@ def messageHandler(ch, method, properties, body):
         # 处理分类并调用相应的API
 
         for category, score in categories.items():
-            if category in api_config:
-                api_info = api_config[category]
+            if category in config.MESSAGE_HANDLER:
+                api_info = config.MESSAGE_HANDLER[category]
                 required_labels = api_info.get("labels", [])
 
                 print(f"Processing required_labels: {required_labels}")

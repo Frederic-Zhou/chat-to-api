@@ -4,7 +4,7 @@ from spacy.training import Example
 import json
 import config  # 从系统配置中导入数据库连接
 import os
-from db_utils import get_training_data, mark_as_trained  # 导入数据库保存函数
+from db import get_training_data, mark_as_trained  # 导入数据库保存函数
 from spacy.lookups import Lookups
 
 
@@ -104,7 +104,7 @@ def incremental_training():
 
             # 进行增量训练
             optimizer = nlp.initialize()
-            for i in range(100):  # 迭代10次
+            for i in range(20):  # 迭代20次
                 losses = {}
                 nlp.update(examples, sgd=optimizer, drop=0.5, losses=losses)
                 print(f"Iteration {i}, Losses: {losses}")
