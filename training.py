@@ -1,4 +1,4 @@
-import sqlite3
+from models import save_updated_model
 import spacy
 from spacy.training import Example
 import json
@@ -42,15 +42,6 @@ def find_entity_positions(text, labels):
             end = start + len(label_value)
             entities.append((start, end, label_type))
     return entities
-
-
-# 保存更新后的模型
-def save_updated_model(nlp, lang):
-    model_name = config.MODEL_LANGS[lang]
-    model_path = os.path.join(config.MODEL_DIR, model_name)  # 同样的保存路径
-    nlp.to_disk(model_path)  # 保存模型
-    print(f"模型 {lang} 已保存到: {model_path}")
-    return model_path  # 返回路径用于重新加载
 
 
 # 执行增量训练

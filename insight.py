@@ -1,13 +1,11 @@
-import os
 import pika
-import spacy
+import yaml
 import requests
 from langdetect import detect
-from spacy.cli import download
 import time
-import yaml
 from db_utils import save_insight  # 导入数据库保存函数
 import config
+from models import models
 
 
 # Load API configuration from YAML file
@@ -17,29 +15,6 @@ def load_handlers_config(file_path="cats_handlers.yaml"):
 
 
 api_config = load_handlers_config()
-
-# 确保模型目录存在
-if not os.path.exists(config.MODEL_DIR):
-    os.makedirs(config.MODEL_DIR)
-
-
-# 预加载所有支持的语言模型
-def preload_models():
-    models = {}
-    for lang, model_name in config.MODEL_LANGS.items():
-        model_path = os.path.join(config.MODEL_DIR, model_name)
-        if not os.path.exists(model_path):
-            download(model_name)
-            nlp = spacy.load(model_name)
-            nlp.to_disk(model_path)
-
-        models[lang] = spacy.load(model_path)
-
-    return models
-
-
-# 加载所有语言模型
-models = preload_models()
 
 
 # 执行 HTTP 请求
