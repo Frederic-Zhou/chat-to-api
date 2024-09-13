@@ -5,7 +5,7 @@ from langdetect import detect
 import time
 from db import save_insight  # 导入数据库保存函数
 import config
-from models import models
+from models import models, preload_models
 
 
 # 执行 HTTP 请求
@@ -91,6 +91,9 @@ def messageHandler(ch, method, properties, body):
                 save_insight(timestamp, text, lang, categories, labels, response, False)
 
 
+# 加载模型
+preload_models()
+
 # 连接到 RabbitMQ
 connection = pika.BlockingConnection(pika.URLParameters(config.RABBITMQ_URL))
 channel = connection.channel()
@@ -99,5 +102,13 @@ channel.basic_consume(
     queue=config.RABBITMQ_QUEUE, on_message_callback=messageHandler, auto_ack=True
 )
 
-print("Waiting for messages. To exit press CTRL+C")
-channel.start_consuming()
+
+try:
+    print("Waiting for messages. To exit press CTRL+C")
+    channel.start_consuming()
+except KeyboardInterrupt:
+    print("Interrupted, closing connection...")
+finally:
+    if connection.is_open:
+        connection.close()
+    print("Connection closed.")

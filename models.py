@@ -40,4 +40,4 @@ def save_updated_model(nlp, lang):
 
 
 # 加载所有语言模型
-preload_models()  # 在启动时加载模型
+# preload_models()  # 在启动时加载模型

@@ -104,9 +104,9 @@ def incremental_training():
 
             # 进行增量训练
             optimizer = nlp.initialize()
-            for i in range(20):  # 迭代20次
+            for i in range(100):  # 迭代20次
                 losses = {}
-                nlp.update(examples, sgd=optimizer, drop=0.5, losses=losses)
+                nlp.update(examples, sgd=optimizer, drop=0.1, losses=losses)
                 print(f"Iteration {i}, Losses: {losses}")
 
             # 保存更新后的模型
