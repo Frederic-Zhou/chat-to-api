@@ -2,6 +2,10 @@ database:
   type: "sqlite"
   connection_string: "insight.db"
 rabbitmq:
-  url: "amqp://user:password@localhost:5672/"
+  url: "amqp://guest:guest@localhost:5672/"
   queue: "insight"
 models_dir: "models"
+models_langs:
+  zh: "zh_core_web_sm"
+  en: "en_core_web_sm"
+  xx: "xx_ent_wiki_sm"

@@ -1,8 +1,9 @@
 import sqlite3
 import json
+import config
 
 # 创建或连接数据库
-conn = sqlite3.connect("insight.db")
+conn = sqlite3.connect(config.DB_CONNECTION_STRING)
 cursor = conn.cursor()
 
 
@@ -68,9 +69,17 @@ def create_tables():
 
 # 保存成功结果到 done_insight/ 保存失败结果到 fail_insight
 def save_insight(timestamp, text, lang, categories, labels, result, isDone):
-    categories_str = json.dumps(list(categories.keys()))  # 将分类转换为字符串
-    labels_dict = {label_type: label for label, label_type in labels}
-    labels_str = json.dumps(labels_dict)  # 将标签转换为字符串
+
+    print(f"Timestamp: {timestamp}")
+    print(f"Text: {text}")
+    print(f"Language: {lang}")
+    print(f"Categories: {categories}")
+    print(f"Labels: {labels}")
+    print(f"Result: {result}")
+    print(f"Is Done: {isDone}")
+
+    categories_str = json.dumps(categories)  # 将分类转换为字符串
+    labels_str = json.dumps(labels)  # 将标签转换为字符串
 
     if isDone:
         table_name = "done_insight"

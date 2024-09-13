@@ -24,18 +24,10 @@ if not os.path.exists(config.MODEL_DIR):
 
 
 # 预加载所有支持的语言模型
-def preload_models(supported_languages):
+def preload_models():
     models = {}
-    for lang in supported_languages:
-        if lang == "en":
-            model_name = "en_core_web_sm"
-        elif lang == "zh":
-            model_name = "zh_core_web_sm"
-        else:
-            model_name = f"{lang}_core_web_sm"
-
+    for lang, model_name in config.MODEL_LANGS.items():
         model_path = os.path.join(config.MODEL_DIR, model_name)
-
         if not os.path.exists(model_path):
             download(model_name)
             nlp = spacy.load(model_name)
@@ -47,8 +39,7 @@ def preload_models(supported_languages):
 
 
 # 加载所有语言模型
-SUPPORTED_LANGUAGES = spacy.util.get_lang_class  # 获取支持的语言
-models = preload_models(SUPPORTED_LANGUAGES)
+models = preload_models()
 
 
 # 执行 HTTP 请求
@@ -65,14 +56,13 @@ def post_to_api(api_url, payload):
 # 从 RabbitMQ 通道读取消息并处理
 def messageHandler(ch, method, properties, body):
     text = body.decode("utf-8")
-    lang = detect(text)
+    lang = detect(text)[:2]  # 检测文本语言
     timestamp = int(time.time())  # 获取当前时间戳
 
     if lang in models:
         nlp = models[lang]
     else:
-        print(f"不支持的语言: {lang}")
-        return
+        nlp = models["xx"]
 
     doc = nlp(text)
     labels = {ent.label_: ent.text for ent in doc.ents}
@@ -86,20 +76,26 @@ def messageHandler(ch, method, properties, body):
     if len(categories.items()) == 0:
         response = "未找到任何分类"
         print(response)
-        save_insight(timestamp, text, lang, categories, labels, response, is_done=False)
+        save_insight(timestamp, text, lang, categories, labels, response, False)
         return
     else:
         # 处理分类并调用相应的API
+
         for category, score in categories.items():
             if category in api_config:
                 api_info = api_config[category]
                 required_labels = api_info.get("labels", [])
+
+                print(f"Processing required_labels: {required_labels}")
 
                 # 提取需要的 labels
                 filtered_labels = {
                     label: labels[label] for label in required_labels if label in labels
                 }
 
+                print(f"Filtered labels: {filtered_labels}")
+
+                is_done = False
                 status_code, response = post_to_api(api_info["api"], filtered_labels)
                 if status_code == 200:
                     print(
@@ -123,17 +119,15 @@ def messageHandler(ch, method, properties, body):
             else:
                 response = f"未找到处理 {category} 的 API 配"
                 print(response)
-                save_insight(
-                    timestamp, text, lang, categories, labels, response, is_done=False
-                )
+                save_insight(timestamp, text, lang, categories, labels, response, False)
 
 
 # 连接到 RabbitMQ
 connection = pika.BlockingConnection(pika.URLParameters(config.RABBITMQ_URL))
 channel = connection.channel()
-channel.queue_declare(queue=config.CHANNEL)
+channel.queue_declare(queue=config.RABBITMQ_QUEUE)
 channel.basic_consume(
-    queue=config.CHANNEL, on_message_callback=messageHandler, auto_ack=True
+    queue=config.RABBITMQ_QUEUE, on_message_callback=messageHandler, auto_ack=True
 )
 
 print("Waiting for messages. To exit press CTRL+C")

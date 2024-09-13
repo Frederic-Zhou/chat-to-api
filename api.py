@@ -12,16 +12,20 @@ rabbit_channel = None
 # 初始化 RabbitMQ 连接和通道
 def init_rabbitmq():
     global rabbit_connection, rabbit_channel
-    rabbit_connection = pika.BlockingConnection(pika.URLParameters(config.RABBITMQ_URL))
-    rabbit_channel = rabbit_connection.channel()
-    rabbit_channel.queue_declare(
-        queue=config.RABBITMQ_QUEUE
-    )  # 声明队列（确保队列存在）
+    if rabbit_connection is None or rabbit_connection.is_closed:
+        rabbit_connection = pika.BlockingConnection(
+            pika.URLParameters(config.RABBITMQ_URL)
+        )
+    if rabbit_channel is None or rabbit_channel.is_closed:
+        rabbit_channel = rabbit_connection.channel()
+        rabbit_channel.queue_declare(
+            queue=config.RABBITMQ_QUEUE
+        )  # 声明队列（确保队列存在）
 
 
-# 在第一次请求之前初始化 RabbitMQ 连接
-@app.before_first_request
-def setup():
+# 在每次请求之前检查 RabbitMQ 连接和通道状态
+@app.before_request
+def ensure_rabbitmq_connection():
     init_rabbitmq()
 
 
@@ -39,10 +43,11 @@ def send_to_rabbitmq():
     return jsonify({"status": "Message sent to RabbitMQ"}), 200
 
 
-# 在程序关闭时关闭 RabbitMQ 连接
+# 在程序关闭时可以选择关闭 RabbitMQ 连接（可选，不推荐在每个请求中关闭）
 @app.teardown_appcontext
 def close_rabbitmq_connection(exception):
-    if rabbit_connection is not None:
+    global rabbit_connection
+    if rabbit_connection and not rabbit_connection.is_closed:
         rabbit_connection.close()
 
 

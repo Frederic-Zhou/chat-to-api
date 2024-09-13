@@ -3,6 +3,7 @@ import spacy
 from spacy.training import Example
 import json
 import config  # 从系统配置中导入数据库连接
+import os
 
 # 连接到数据库
 conn = sqlite3.connect(config.DB_CONNECTION_STRING)
@@ -34,6 +35,15 @@ def find_entity_positions(text, labels):
     return entities
 
 
+# 保存更新后的模型
+def save_updated_model(nlp, lang):
+    model_name = config.MODEL_LANGS[lang]
+    model_path = os.path.join(config.MODEL_DIR, model_name)  # 同样的保存路径
+    nlp.to_disk(model_path)  # 保存模型
+    print(f"模型 {lang} 已保存到: {model_path}")
+    return model_path  # 返回路径用于重新加载
+
+
 # 执行增量训练
 def incremental_training():
     # 获取需要训练的数据
@@ -59,12 +69,9 @@ def incremental_training():
             print(f"开始对 {lang} 的模型进行增量训练...")
 
             # 加载模型
-            if lang == "en":
-                nlp = spacy.load("en_core_web_lg")
-            elif lang == "zh":
-                nlp = spacy.load("zh_core_web_lg")
-            else:
-                nlp = spacy.load(f"{lang}_core_web_sm")  # 使用默认 sm 模型
+            model_name = config.MODEL_LANGS[lang]
+            model_path = os.path.join(config.MODEL_DIR, model_name)
+            nlp = spacy.load(model_path)
 
             # 确保 NER 和 textcat 管道存在
             if "ner" not in nlp.pipe_names:
@@ -99,7 +106,7 @@ def incremental_training():
                 print(f"Iteration {i}, Losses: {losses}")
 
             # 保存更新后的模型
-            nlp.to_disk(f"updated_model_{lang}")
+            model_path = save_updated_model(nlp, lang)  # 保存并获取路径
             print(f"模型 {lang} 已完成增量训练并保存。")
 
         except Exception as e:
