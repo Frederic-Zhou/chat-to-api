@@ -43,8 +43,9 @@ models = preload_models()
 
 
 # 执行 HTTP 请求
-def post_to_api(api_url, payload):
+def post_to_api(api_url, payload, text):
     try:
+        payload["text"] = text
         response = requests.post(
             url=api_url, headers={"Content-Type": "application/json"}, json=payload
         )
@@ -96,7 +97,9 @@ def messageHandler(ch, method, properties, body):
                 print(f"Filtered labels: {filtered_labels}")
 
                 is_done = False
-                status_code, response = post_to_api(api_info["api"], filtered_labels)
+                status_code, response = post_to_api(
+                    api_info["api"], filtered_labels, text
+                )
                 if status_code == 200:
                     print(
                         f"API for {category} responded with status {status_code}: {response}"
@@ -117,7 +120,7 @@ def messageHandler(ch, method, properties, body):
                 )
 
             else:
-                response = f"未找到处理 {category} 的 API 配"
+                response = f"未找到处理 {category} 的 API 配对处理接口"
                 print(response)
                 save_insight(timestamp, text, lang, categories, labels, response, False)
 

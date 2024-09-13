@@ -1,10 +1,8 @@
-category1:
+ISASK:
   api: "https://api.example.com/category1"
   labels:
-    - "cat1"
-    - "cat2"
-category2:
+    - "PHONE"
+ISHI:
   api: "https://api.example.com/category2"
   labels:
-    - "cat1"
-    - "cat2"
+    - "PERSON"

@@ -4,24 +4,8 @@ from spacy.training import Example
 import json
 import config  # 从系统配置中导入数据库连接
 import os
-
-# 连接到数据库
-conn = sqlite3.connect(config.DB_CONNECTION_STRING)
-cursor = conn.cursor()
-
-
-# 从数据库中获取需要训练的数据
-def get_training_data():
-    cursor.execute(
-        "SELECT text, lang, categories, labels FROM fail_insight WHERE train_it = 1"
-    )
-    return cursor.fetchall()
-
-
-# 将数据标记为已训练
-def mark_as_trained():
-    cursor.execute("UPDATE fail_insight SET train_it = 0 WHERE train_it = 1")
-    conn.commit()
+from db_utils import get_training_data, mark_as_trained  # 导入数据库保存函数
+from spacy.lookups import Lookups
 
 
 # 动态添加 textcat 和 ner 标签
@@ -31,12 +15,22 @@ def add_dynamic_labels(textcat, ner, categories, labels):
         for category in categories.keys():  # categories 是 dict，取 keys 作为标签
             if category not in textcat.labels:
                 textcat.add_label(category)
+                print(f"Added TextCategorizer label: {category}")
+            else:
+                print(f"TextCategorizer label already exists: {category}")
+    else:
+        print("TextCategorizer pipe not found.")
 
     # 动态添加 ner 标签
     if ner is not None:
         for label_type in labels.keys():  # labels 是 dict，取 keys 作为标签
             if label_type not in ner.labels:
                 ner.add_label(label_type)
+                print(f"Added NER label: {label_type}")
+            else:
+                print(f"NER label already exists: {label_type}")
+    else:
+        print("NER pipe not found.")
 
 
 # 查找实体在文本中的位置
@@ -87,6 +81,7 @@ def incremental_training():
             model_name = config.MODEL_LANGS[lang]
             model_path = os.path.join(config.MODEL_DIR, model_name)
             nlp = spacy.load(model_path)
+            nlp.vocab.lookups = Lookups()
 
             # 确保 NER 和 textcat 管道存在
             if "ner" not in nlp.pipe_names:
@@ -94,10 +89,10 @@ def incremental_training():
             else:
                 ner = nlp.get_pipe("ner")
 
-            if "textcat" not in nlp.pipe_names:
-                textcat = nlp.add_pipe("textcat", last=True)
+            if "textcat_multilabel" not in nlp.pipe_names:
+                textcat = nlp.add_pipe("textcat_multilabel", last=True)
             else:
-                textcat = nlp.get_pipe("textcat")
+                textcat = nlp.get_pipe("textcat_multilabel")
 
             # 创建训练示例
             examples = []
@@ -112,32 +107,26 @@ def incremental_training():
                 example = Example.from_dict(
                     doc, {"entities": entities, "cats": categories}
                 )
+
+                print(f"entities: {entities}, cats: {categories}")
                 examples.append(example)
 
             # 进行增量训练
             optimizer = nlp.initialize()
-            for i in range(10):  # 迭代10次
+            for i in range(100):  # 迭代10次
                 losses = {}
-                nlp.update(examples, sgd=optimizer, losses=losses)
+                nlp.update(examples, sgd=optimizer, drop=0.5, losses=losses)
                 print(f"Iteration {i}, Losses: {losses}")
 
             # 保存更新后的模型
             model_path = save_updated_model(nlp, lang)  # 保存并获取路径
             print(f"模型 {lang} 已完成增量训练并保存。")
-
+            # 标记数据为已训练
+            mark_as_trained()
         except Exception as e:
             print(f"对 {lang} 的模型进行增量训练时出错: {e}")
-
-    # 标记数据为已训练
-    mark_as_trained()
-
-
-# 关闭数据库连接
-def close_db():
-    conn.close()
 
 
 # 执行增量训练
 if __name__ == "__main__":
     incremental_training()
-    close_db()

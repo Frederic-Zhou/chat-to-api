@@ -97,6 +97,24 @@ def save_insight(timestamp, text, lang, categories, labels, result, isDone):
     conn.commit()
 
 
+# 从数据库中获取需要训练的数据
+def get_training_data():
+    try:
+        cursor.execute(
+            "SELECT text, lang, categories, labels FROM fail_insight WHERE train_it = 1"
+        )
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"获取需要训练的数据时出错: {e}")
+        return None
+
+
+# 将数据标记为已训练
+def mark_as_trained():
+    cursor.execute("UPDATE fail_insight SET train_it = 0 WHERE train_it = 1")
+    conn.commit()
+
+
 # 关闭数据库连接
 def close_db():
     conn.close()

@@ -31,13 +31,13 @@ def ensure_rabbitmq_connection():
 
 @app.route("/send", methods=["POST"])
 def send_to_rabbitmq():
-    txt = request.json.get("txt")
-    if not txt:
-        return jsonify({"error": "No txt provided"}), 400
+    text = request.json.get("text")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
 
     # 使用全局的 RabbitMQ 通道
     rabbit_channel.basic_publish(
-        exchange="", routing_key=config.RABBITMQ_QUEUE, body=txt
+        exchange="", routing_key=config.RABBITMQ_QUEUE, body=text
     )
 
     return jsonify({"status": "Message sent to RabbitMQ"}), 200
