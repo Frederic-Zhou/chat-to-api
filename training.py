@@ -24,6 +24,21 @@ def mark_as_trained():
     conn.commit()
 
 
+# 动态添加 textcat 和 ner 标签
+def add_dynamic_labels(textcat, ner, categories, labels):
+    # 动态添加 textcat 标签
+    if textcat is not None:
+        for category in categories.keys():  # categories 是 dict，取 keys 作为标签
+            if category not in textcat.labels:
+                textcat.add_label(category)
+
+    # 动态添加 ner 标签
+    if ner is not None:
+        for label_type in labels.keys():  # labels 是 dict，取 keys 作为标签
+            if label_type not in ner.labels:
+                ner.add_label(label_type)
+
+
 # 查找实体在文本中的位置
 def find_entity_positions(text, labels):
     entities = []
@@ -87,6 +102,7 @@ def incremental_training():
             # 创建训练示例
             examples = []
             for text, categories, labels in texts:
+                add_dynamic_labels(textcat, ner, categories, labels)
                 doc = nlp.make_doc(text)
 
                 # 查找实体在文本中的位置
