@@ -11,12 +11,12 @@ import config
 
 
 # Load API configuration from YAML file
-def load_api_config(file_path="cats_handlers.yaml"):
+def load_handlers_config(file_path="cats_handlers.yaml"):
     with open(file_path, "r") as f:
         return yaml.safe_load(f)
 
 
-api_config = load_api_config()
+api_config = load_handlers_config()
 
 # 确保模型目录存在
 if not os.path.exists(config.MODEL_DIR):
