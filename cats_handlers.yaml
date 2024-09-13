@@ -1,0 +1,10 @@
+category1:
+  api: "https://api.example.com/category1"
+  labels:
+    - "cat1"
+    - "cat2"
+category2:
+  api: "https://api.example.com/category2"
+  labels:
+    - "cat1"
+    - "cat2"
