@@ -103,11 +103,11 @@ def incremental_training(initialize=False):
                 print(f"entities: {entities}, cats: {categories}")
                 examples.append(example)
 
+            optimizer = nlp.initialize()
             # 进行增量训练
             if initialize:
                 optimizer = nlp.resume_training()
-            else:
-                optimizer = nlp.initialize()
+
             for i in range(20):  # 迭代20次
                 losses = {}
                 nlp.update(examples, sgd=optimizer, drop=0.1, losses=losses)
