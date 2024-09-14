@@ -10,12 +10,12 @@ import sys
 
 
 # 动态添加 textcat 和 ner 标签
-def add_dynamic_labels(textcat_multilabel, ner, categories, labels):
+def add_dynamic_labels(textcat, ner, categories, labels):
     # 动态添加 textcat 标签
-    if textcat_multilabel is not None:
+    if textcat is not None:
         for category in categories.keys():  # categories 是 dict，取 keys 作为标签
-            if category not in textcat_multilabel.labels:
-                textcat_multilabel.add_label(category)
+            if category not in textcat.labels:
+                textcat.add_label(category)
                 print(f"Added TextCategorizer label: {category}")
             else:
                 print(f"TextCategorizer label already exists: {category}")
@@ -81,15 +81,15 @@ def incremental_training(initialize=False):
             else:
                 ner = nlp.get_pipe("ner")
 
-            if "textcat_multilabel" not in nlp.pipe_names:
-                textcat_multilabel = nlp.add_pipe("textcat_multilabel", last=True)
+            if "textcat" not in nlp.pipe_names:
+                textcat = nlp.add_pipe("textcat", last=True)
             else:
-                textcat_multilabel = nlp.get_pipe("textcat_multilabel")
+                textcat = nlp.get_pipe("textcat")
 
             # 创建训练示例
             examples = []
             for text, categories, labels in texts:
-                add_dynamic_labels(textcat_multilabel, ner, categories, labels)
+                add_dynamic_labels(textcat, ner, categories, labels)
                 doc = nlp.make_doc(text)
 
                 # 查找实体在文本中的位置
@@ -103,9 +103,12 @@ def incremental_training(initialize=False):
                 print(f"entities: {entities}, cats: {categories}")
                 examples.append(example)
 
-            optimizer = nlp.initialize()
-            # 进行增量训练
+            optimizer = None
             if initialize:
+                print("确定开始初始化训练...")
+                optimizer = nlp.initialize()
+            else:
+                print("确定开始增量训练...")
                 optimizer = nlp.resume_training()
 
             for i in range(20):  # 迭代20次
@@ -125,7 +128,7 @@ def incremental_training(initialize=False):
 # 执行增量训练
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "init":
-        print("初始化增量训练...")
+        print("初始化训练...")
         incremental_training(True)
     else:
         print("开始增量训练...")
