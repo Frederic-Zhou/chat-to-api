@@ -6,6 +6,6 @@ rabbitmq:
   queue: "insight"
 models_dir: "models"
 models_langs:
-  zh: "zh_core_web_sm"
-  en: "en_core_web_sm"
-  xx: "xx_ent_wiki_sm"
+  zh: "zh_my"
+  en: "en_my"
+  xx: "xx_my"
