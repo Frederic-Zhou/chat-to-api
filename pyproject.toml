@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "input-insight"
+name = "chat-to-api"
 version = "0.1.0"
 description = ""
 authors = ["Frederic <zetachow@163.com>"]
